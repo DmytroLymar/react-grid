@@ -3,6 +3,7 @@ import { Paper } from '@mui/material';
 import {
     Grid,
     GroupingPanel,
+    PagingPanel,
     Table,
     TableGroupRow,
     TableHeaderRow,
@@ -15,7 +16,9 @@ import { CurrencyTypeProvider, DateTypeProvider } from './components/Formaters';
 import {
     GroupingState,
     IntegratedGrouping,
+    IntegratedPaging,
     IntegratedSorting,
+    PagingState,
     SortingState,
     type Grouping,
     type Sorting
@@ -30,11 +33,14 @@ function App() {
         { name: 'saleDate', title: 'Sale Date' },
         { name: 'amount', title: 'Sale Amount' }
     ]);
-    const [rows] = useState(generateRows({ columnValues: globalSalesValues, length: 8 }));
+    const [rows] = useState(generateRows({ columnValues: globalSalesValues, length: 24 }));
     const [dateColumns] = useState(['saleDate']);
     const [currencyColumns] = useState(['amount']);
     const [sorting, setSorting] = useState<Sorting[]>([{ columnName: 'amount', direction: 'asc' }]);
     const [grouping, setGrouping] = useState<Grouping[]>([{ columnName: 'product' }]);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [pageSize, setPageSize] = useState(5);
+    const [pageSizes] = useState([5, 10, 15, 0]);
 
     return (
         <Paper>
@@ -44,12 +50,21 @@ function App() {
 
                 <SortingState sorting={sorting} onSortingChange={setSorting} />
                 <GroupingState grouping={grouping} onGroupingChange={setGrouping} />
+                <PagingState
+                    currentPage={currentPage}
+                    onCurrentPageChange={setCurrentPage}
+                    pageSize={pageSize}
+                    onPageSizeChange={setPageSize}
+                />
 
                 <IntegratedSorting />
                 <IntegratedGrouping />
+                <IntegratedPaging />
 
                 <Table rowComponent={TableRow} />
                 <TableHeaderRow showSortingControls showGroupingControls />
+
+                <PagingPanel pageSizes={pageSizes} />
 
                 <TableGroupRow />
                 <Toolbar />

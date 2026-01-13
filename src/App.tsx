@@ -14,6 +14,7 @@ import {
     TableHeaderRow,
     TableRowDetail,
     TableSelection,
+    TableSummaryRow,
     Toolbar
 } from '@devexpress/dx-react-grid-material-ui';
 import { generateRows, globalSalesValues } from './demo-data/generator';
@@ -29,11 +30,13 @@ import {
     IntegratedPaging,
     IntegratedSelection,
     IntegratedSorting,
+    IntegratedSummary,
     PagingState,
     RowDetailState,
     SearchState,
     SelectionState,
     SortingState,
+    SummaryState,
     type ChangeSet,
     type Filter,
     type Grouping,
@@ -80,6 +83,12 @@ function App() {
     const [pageSizes] = useState<number[]>([5, 10, 15, 0]);
 
     const [selection, setSelection] = useState<(string | number)[]>([]);
+
+    const [totalSummaryItems] = useState([
+        { columnName: 'region', type: 'count' },
+        { columnName: 'amount', type: 'max' },
+        { columnName: 'amount', type: 'sum' }
+    ]);
 
     const commitChanges = useCallback(
         ({ added, changed, deleted }: ChangeSet) => {
@@ -143,11 +152,14 @@ function App() {
 
                     <RowDetailState expandedRowIds={expandedRowIds} onExpandedRowIdsChange={setExpandedRowIds} />
 
+                    <SummaryState totalItems={totalSummaryItems} />
+
                     <IntegratedSorting />
                     <IntegratedGrouping />
                     <IntegratedFiltering />
                     <IntegratedPaging />
                     <IntegratedSelection />
+                    <IntegratedSummary />
 
                     <Table rowComponent={TableRow} />
                     <TableHeaderRow showSortingControls showGroupingControls />
@@ -157,6 +169,7 @@ function App() {
                     <TableFilterRow />
                     <TableSelection />
                     <TableGroupRow />
+                    <TableSummaryRow />
 
                     <Toolbar />
                     <SearchPanel />

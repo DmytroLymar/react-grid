@@ -1,24 +1,184 @@
 import './App.css';
 import { Paper } from '@mui/material';
-import { Grid, Table, TableHeaderRow } from '@devexpress/dx-react-grid-material-ui';
+import {
+    DragDropProvider,
+    Grid,
+    GroupingPanel,
+    PagingPanel,
+    SearchPanel,
+    Table,
+    TableEditColumn,
+    TableEditRow,
+    TableFilterRow,
+    TableGroupRow,
+    TableHeaderRow,
+    TableRowDetail,
+    TableSelection,
+    TableSummaryRow,
+    Toolbar
+} from '@devexpress/dx-react-grid-material-ui';
+import { generateRows, globalSalesValues } from './demo-data/generator';
+import { useCallback, useState } from 'react';
+import { TableRow } from './components/TableRow';
+import { CurrencyTypeProvider, DateTypeProvider } from './components/Formaters';
+import {
+    EditingState,
+    FilteringState,
+    GroupingState,
+    IntegratedFiltering,
+    IntegratedGrouping,
+    IntegratedPaging,
+    IntegratedSelection,
+    IntegratedSorting,
+    IntegratedSummary,
+    PagingState,
+    RowDetailState,
+    SearchState,
+    SelectionState,
+    SortingState,
+    SummaryState,
+    type ChangeSet,
+    type Filter,
+    type Grouping,
+    type Row,
+    type RowId,
+    type Sorting
+} from '@devexpress/dx-react-grid';
+
+const getRowId = (row: Row): RowId => row.id;
+
+const RowDetail = ({ row }: { row: Record<string, unknown> }) => (
+    <div>
+        Details for {String(row.customer)} from {String(row.region)}
+    </div>
+);
 
 function App() {
-    const columns = [
-        { name: 'id', title: 'ID' },
+    const [columns] = useState([
+        { name: 'region', title: 'Region' },
+        { name: 'sector', title: 'Sector' },
+        { name: 'customer', title: 'Customer' },
         { name: 'product', title: 'Product' },
-        { name: 'owner', title: 'Owner' }
-    ];
-    const rows = [
-        { id: 0, product: 'DevExtreme', owner: 'DevExpress' },
-        { id: 1, product: 'DevExtreme Reactive', owner: 'DevExpress' }
-    ];
+        { name: 'saleDate', title: 'Sale Date' },
+        { name: 'amount', title: 'Sale Amount' }
+    ]);
+    const [rows, setRows] = useState<Row[]>(
+        generateRows({
+            columnValues: { id: ({ index }: { index: number }) => index, ...globalSalesValues },
+            length: 24
+        }) as Row[]
+    );
+    const [expandedRowIds, setExpandedRowIds] = useState<RowId[]>([1]);
+
+    const [dateColumns] = useState<string[]>(['saleDate']);
+    const [currencyColumns] = useState<string[]>(['amount']);
+
+    const [sorting, setSorting] = useState<Sorting[]>([{ columnName: 'amount', direction: 'asc' }]);
+    const [grouping, setGrouping] = useState<Grouping[]>([]);
+    const [filters, setFilters] = useState<Filter[]>([]);
+    const [searchValue, setSearchState] = useState('');
+
+    const [currentPage, setCurrentPage] = useState(0);
+    const [pageSize, setPageSize] = useState(5);
+    const [pageSizes] = useState<number[]>([5, 10, 15, 0]);
+
+    const [selection, setSelection] = useState<(string | number)[]>([]);
+
+    const [totalSummaryItems] = useState([
+        { columnName: 'region', type: 'count' },
+        { columnName: 'amount', type: 'max' },
+        { columnName: 'amount', type: 'sum' }
+    ]);
+
+    const commitChanges = useCallback(
+        ({ added, changed, deleted }: ChangeSet) => {
+            setRows((prevRows) => {
+                let nextRows = prevRows;
+
+                if (added && added.length) {
+                    const lastId = prevRows.length ? prevRows[prevRows.length - 1].id : -1;
+                    const startingAddedId = lastId + 1;
+
+                    nextRows = [
+                        ...prevRows,
+                        ...(added as Array<Partial<Row>>).map((row, index) => ({
+                            id: startingAddedId + index,
+                            ...row
+                        }))
+                    ];
+                }
+
+                if (changed) {
+                    nextRows = nextRows.map((row) => {
+                        const change = (changed as Record<RowId, Partial<Row>>)[row.id];
+                        return change ? { ...row, ...change } : row;
+                    });
+                }
+
+                if (deleted && deleted.length) {
+                    const deletedSet = new Set(deleted as RowId[]);
+                    nextRows = nextRows.filter((row) => !deletedSet.has(row.id));
+                }
+
+                return nextRows;
+            });
+        },
+        [setRows]
+    );
+
     return (
-        <Paper>
-            <Grid rows={rows} columns={columns}>
-                <Table />
-                <TableHeaderRow />
-            </Grid>
-        </Paper>
+        <div>
+            <Paper>
+                <Grid rows={rows} columns={columns} getRowId={getRowId}>
+                    <CurrencyTypeProvider for={currencyColumns} />
+                    <DateTypeProvider for={dateColumns} />
+
+                    <DragDropProvider />
+
+                    <SearchState value={searchValue} onValueChange={setSearchState} />
+                    <SortingState sorting={sorting} onSortingChange={setSorting} />
+                    <GroupingState grouping={grouping} onGroupingChange={setGrouping} />
+                    <FilteringState filters={filters} onFiltersChange={setFilters} />
+                    <EditingState onCommitChanges={commitChanges} />
+
+                    <PagingState
+                        currentPage={currentPage}
+                        onCurrentPageChange={setCurrentPage}
+                        pageSize={pageSize}
+                        onPageSizeChange={setPageSize}
+                    />
+
+                    <SelectionState selection={selection} onSelectionChange={setSelection} />
+
+                    <RowDetailState expandedRowIds={expandedRowIds} onExpandedRowIdsChange={setExpandedRowIds} />
+
+                    <SummaryState totalItems={totalSummaryItems} />
+
+                    <IntegratedSorting />
+                    <IntegratedGrouping />
+                    <IntegratedFiltering />
+                    <IntegratedPaging />
+                    <IntegratedSelection />
+                    <IntegratedSummary />
+
+                    <Table rowComponent={TableRow} />
+                    <TableHeaderRow showSortingControls showGroupingControls />
+                    <TableRowDetail contentComponent={RowDetail} />
+                    <TableEditRow />
+                    <TableEditColumn showAddCommand showEditCommand showDeleteCommand />
+                    <TableFilterRow />
+                    <TableSelection />
+                    <TableGroupRow />
+                    <TableSummaryRow />
+
+                    <Toolbar />
+                    <SearchPanel />
+                    <GroupingPanel showGroupingControls />
+                    <PagingPanel pageSizes={pageSizes} />
+                </Grid>
+            </Paper>
+            <span>Total rows selected: {selection.length}</span>
+        </div>
     );
 }
 

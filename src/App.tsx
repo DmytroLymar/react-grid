@@ -4,6 +4,7 @@ import {
     Grid,
     GroupingPanel,
     PagingPanel,
+    SearchPanel,
     Table,
     TableFilterRow,
     TableGroupRow,
@@ -22,6 +23,7 @@ import {
     IntegratedPaging,
     IntegratedSorting,
     PagingState,
+    SearchState,
     SortingState,
     type Filter,
     type Grouping,
@@ -46,6 +48,7 @@ function App() {
     const [pageSize, setPageSize] = useState(5);
     const [pageSizes] = useState([5, 10, 15, 0]);
     const [filters, setFilters] = useState<Filter[]>([]);
+    const [searchValue, setSearchState] = useState('');
 
     return (
         <Paper>
@@ -53,30 +56,31 @@ function App() {
                 <CurrencyTypeProvider for={currencyColumns} />
                 <DateTypeProvider for={dateColumns} />
 
+                <SearchState value={searchValue} onValueChange={setSearchState} />
                 <SortingState sorting={sorting} onSortingChange={setSorting} />
                 <GroupingState grouping={grouping} onGroupingChange={setGrouping} />
+                <FilteringState filters={filters} onFiltersChange={setFilters} />
                 <PagingState
                     currentPage={currentPage}
                     onCurrentPageChange={setCurrentPage}
                     pageSize={pageSize}
                     onPageSizeChange={setPageSize}
                 />
-                <FilteringState filters={filters} onFiltersChange={setFilters} />
 
                 <IntegratedSorting />
                 <IntegratedGrouping />
-                <IntegratedPaging />
                 <IntegratedFiltering />
+                <IntegratedPaging />
 
                 <Table rowComponent={TableRow} />
                 <TableHeaderRow showSortingControls showGroupingControls />
                 <TableFilterRow />
-
-                <PagingPanel pageSizes={pageSizes} />
-
                 <TableGroupRow />
+
                 <Toolbar />
+                <SearchPanel />
                 <GroupingPanel showGroupingControls />
+                <PagingPanel pageSizes={pageSizes} />
             </Grid>
         </Paper>
     );

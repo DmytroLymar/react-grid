@@ -12,6 +12,7 @@ import {
     TableFilterRow,
     TableGroupRow,
     TableHeaderRow,
+    TableRowDetail,
     TableSelection,
     Toolbar
 } from '@devexpress/dx-react-grid-material-ui';
@@ -29,6 +30,7 @@ import {
     IntegratedSelection,
     IntegratedSorting,
     PagingState,
+    RowDetailState,
     SearchState,
     SelectionState,
     SortingState,
@@ -41,6 +43,12 @@ import {
 } from '@devexpress/dx-react-grid';
 
 const getRowId = (row: Row): RowId => row.id;
+
+const RowDetail = ({ row }: { row: Record<string, unknown> }) => (
+    <div>
+        Details for {String(row.customer)} from {String(row.region)}
+    </div>
+);
 
 function App() {
     const [columns] = useState([
@@ -57,6 +65,8 @@ function App() {
             length: 24
         }) as Row[]
     );
+    const [expandedRowIds, setExpandedRowIds] = useState<RowId[]>([1]);
+
     const [dateColumns] = useState<string[]>(['saleDate']);
     const [currencyColumns] = useState<string[]>(['amount']);
 
@@ -131,6 +141,8 @@ function App() {
 
                     <SelectionState selection={selection} onSelectionChange={setSelection} />
 
+                    <RowDetailState expandedRowIds={expandedRowIds} onExpandedRowIdsChange={setExpandedRowIds} />
+
                     <IntegratedSorting />
                     <IntegratedGrouping />
                     <IntegratedFiltering />
@@ -139,6 +151,7 @@ function App() {
 
                     <Table rowComponent={TableRow} />
                     <TableHeaderRow showSortingControls showGroupingControls />
+                    <TableRowDetail contentComponent={RowDetail} />
                     <TableEditRow />
                     <TableEditColumn showAddCommand showEditCommand showDeleteCommand />
                     <TableFilterRow />

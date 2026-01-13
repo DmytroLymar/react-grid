@@ -5,6 +5,7 @@ import {
     GroupingPanel,
     PagingPanel,
     Table,
+    TableFilterRow,
     TableGroupRow,
     TableHeaderRow,
     Toolbar
@@ -14,12 +15,15 @@ import { useState } from 'react';
 import { TableRow } from './components/TableRow';
 import { CurrencyTypeProvider, DateTypeProvider } from './components/Formaters';
 import {
+    FilteringState,
     GroupingState,
+    IntegratedFiltering,
     IntegratedGrouping,
     IntegratedPaging,
     IntegratedSorting,
     PagingState,
     SortingState,
+    type Filter,
     type Grouping,
     type Sorting
 } from '@devexpress/dx-react-grid';
@@ -37,10 +41,11 @@ function App() {
     const [dateColumns] = useState(['saleDate']);
     const [currencyColumns] = useState(['amount']);
     const [sorting, setSorting] = useState<Sorting[]>([{ columnName: 'amount', direction: 'asc' }]);
-    const [grouping, setGrouping] = useState<Grouping[]>([{ columnName: 'product' }]);
+    const [grouping, setGrouping] = useState<Grouping[]>([]);
     const [currentPage, setCurrentPage] = useState(0);
     const [pageSize, setPageSize] = useState(5);
     const [pageSizes] = useState([5, 10, 15, 0]);
+    const [filters, setFilters] = useState<Filter[]>([]);
 
     return (
         <Paper>
@@ -56,13 +61,16 @@ function App() {
                     pageSize={pageSize}
                     onPageSizeChange={setPageSize}
                 />
+                <FilteringState filters={filters} onFiltersChange={setFilters} />
 
                 <IntegratedSorting />
                 <IntegratedGrouping />
                 <IntegratedPaging />
+                <IntegratedFiltering />
 
                 <Table rowComponent={TableRow} />
                 <TableHeaderRow showSortingControls showGroupingControls />
+                <TableFilterRow />
 
                 <PagingPanel pageSizes={pageSizes} />
 

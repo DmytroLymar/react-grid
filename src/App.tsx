@@ -1,6 +1,7 @@
 import './App.css';
 import { Paper } from '@mui/material';
 import {
+    DragDropProvider,
     Grid,
     GroupingPanel,
     PagingPanel,
@@ -55,6 +56,7 @@ function App() {
             <Grid rows={rows} columns={columns}>
                 <CurrencyTypeProvider for={currencyColumns} />
                 <DateTypeProvider for={dateColumns} />
+                <DragDropProvider />
 
                 <SearchState value={searchValue} onValueChange={setSearchState} />
                 <SortingState sorting={sorting} onSortingChange={setSorting} />

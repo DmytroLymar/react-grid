@@ -1,7 +1,33 @@
+// src/demo-data/generator.ts
 import randomSeed from './random';
 
-const femaleFirstNames = ['Mary', 'Linda', 'Barbara', 'Maria', 'Lisa', 'Nancy', 'Betty', 'Sandra', 'Sharon'];
-const maleFirstNames = ['James', 'John', 'Robert', 'William', 'David', 'Richard', 'Thomas', 'Paul', 'Mark'];
+type RandomFn = () => number;
+
+type GeneratorContext<R extends Record<string, unknown>> = {
+    random: RandomFn;
+    index: number;
+    record: R;
+};
+
+type GeneratorFn<R extends Record<string, unknown>, V> = (ctx: GeneratorContext<R>) => V;
+
+// 1) values can be:
+// - array of primitives/objects: ['Asia', 'Europe'] or [{model:'BMW'}]
+// - function generator: ({random}) => number
+// - dependent values: ['gender', { Male: [...], Female: [...] }]
+type DependentSpec<R extends Record<string, unknown>> = [keyof R & string, Record<string, ColumnValues<R>>];
+
+type ColumnValues<R extends Record<string, unknown>> =
+    | readonly (string | number | boolean | Record<string, unknown>)[]
+    | GeneratorFn<R, unknown>
+    | DependentSpec<R>;
+
+type ColumnValuesMap<R extends Record<string, unknown>> = Record<string, ColumnValues<R>>;
+
+// ---------- demo data ----------
+const femaleFirstNames = ['Mary', 'Linda', 'Barbara', 'Maria', 'Lisa', 'Nancy', 'Betty', 'Sandra', 'Sharon'] as const;
+const maleFirstNames = ['James', 'John', 'Robert', 'William', 'David', 'Richard', 'Thomas', 'Paul', 'Mark'] as const;
+
 const lastNames = [
     'Smith',
     'Johnson',
@@ -27,8 +53,11 @@ const lastNames = [
     'Martinez',
     'Robinson',
     'Clark'
-];
-const usStates = [
+] as const;
+
+type USState = { name: string; abbr: string };
+
+const usStates: readonly USState[] = [
     { name: 'Alabama', abbr: 'AL' },
     { name: 'Alaska', abbr: 'AK' },
     { name: 'American Samoa', abbr: 'AS' },
@@ -88,7 +117,8 @@ const usStates = [
     { name: 'West Virginia', abbr: 'WV' },
     { name: 'Wisconsin', abbr: 'WI' },
     { name: 'Wyoming', abbr: 'WY' }
-];
+] as const;
+
 const cities = [
     'New York',
     'Los Angeles',
@@ -99,7 +129,8 @@ const cities = [
     'Rio de Janeiro',
     'London',
     'Paris'
-];
+] as const;
+
 const cars = [
     'Honda Civic',
     'Toyota Corolla',
@@ -109,7 +140,8 @@ const cars = [
     'Kia Optima',
     'Audi A4',
     'BMW 750'
-];
+] as const;
+
 const positions = [
     'CEO',
     'IT Manager',
@@ -120,58 +152,70 @@ const positions = [
     'Shipping Manager',
     'Sales Assistant',
     'HR Assistant'
-];
+] as const;
+
+// ---------- helpers ----------
+type DatePart = number | ((rand: RandomFn) => number);
+
+type GenerateDateArgs = {
+    random: RandomFn;
+    year?: DatePart;
+    month?: DatePart;
+    day?: DatePart;
+};
 
 const generateDate = ({
     random,
     year = 2017,
-    month = (rand) => Math.floor(rand() * 12),
-    day = (rand) => Math.floor(rand() * 30) + 1
-}) => {
-    const getPart = (part) => (typeof part === 'function' ? part(random) : part);
+    month = (rand: RandomFn) => Math.floor(rand() * 12),
+    day = (rand: RandomFn) => Math.floor(rand() * 30) + 1
+}: GenerateDateArgs): string => {
+    const getPart = (part: DatePart) => (typeof part === 'function' ? part(random) : part);
     const date = new Date(Date.UTC(getPart(year), getPart(month), getPart(day)));
+
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(
         2,
         '0'
     )}`;
 };
 
-const generatePhone = () =>
+const generatePhone = (): string =>
     Math.random()
         .toString()
         .slice(2, 12)
         .replace(/(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3');
 
+// ---------- exported demo presets ----------
 export const defaultColumnValues = {
     gender: ['Male', 'Female'],
     name: [
         'gender',
         {
-            Male: maleFirstNames,
-            Female: femaleFirstNames
+            Male: [...maleFirstNames],
+            Female: [...femaleFirstNames]
         }
     ],
-    city: cities,
-    car: cars
-};
+    city: [...cities],
+    car: [...cars]
+} satisfies ColumnValuesMap<Record<string, unknown>>;
 
 export const defaultNestedColumnValues = {
     user: [
         ...[...maleFirstNames, ...femaleFirstNames].map((name, i) => ({
             firstName: name,
-            lastName: lastNames[i]
+            lastName: lastNames[i] ?? lastNames[lastNames.length - 1]
         }))
     ],
-    position: positions,
-    city: cities,
+    position: [...positions],
+    city: [...cities],
     car: cars.map((car) => ({ model: car }))
-};
+} satisfies ColumnValuesMap<Record<string, unknown>>;
 
 export const globalSalesValues = {
     region: ['Asia', 'Europe', 'North America', 'South America', 'Australia', 'Africa'],
     sector: ['Energy', 'Health', 'Manufacturing', 'Insurance', 'Banking', 'Telecom'],
     channel: ['Resellers', 'Retail', 'VARs', 'Consultants', 'Direct', 'Telecom'],
-    units: ({ random }) => Math.floor(random() * 4) + 1,
+    units: ({ random }: { random: RandomFn }) => Math.floor(random() * 4) + 1,
     customer: [
         'Renewable Supplies',
         'Energy Systems',
@@ -190,16 +234,16 @@ export const globalSalesValues = {
         'Mercury Solar'
     ],
     product: ['SolarMax', 'SolarOne', 'EnviroCare', 'EnviroCare Max'],
-    amount: ({ random }) => Math.floor(random() * 1000000 + 1000) / 20,
-    discount: ({ random }) => Math.round(random() * 0.5 * 1000) / 1000,
-    saleDate: ({ random }) =>
+    amount: ({ random }: { random: RandomFn }) => Math.floor(random() * 1000000 + 1000) / 20,
+    discount: ({ random }: { random: RandomFn }) => Math.round(random() * 0.5 * 1000) / 1000,
+    saleDate: ({ random }: { random: RandomFn }) =>
         generateDate({
             random,
             year: 2016,
             month: () => Math.floor(random() * 3) + 1
         }),
     shipped: [true, false]
-};
+} satisfies ColumnValuesMap<Record<string, unknown>>;
 
 export const employeeValues = {
     gender: ['Male', 'Female'],
@@ -213,20 +257,20 @@ export const employeeValues = {
     firstName: [
         'gender',
         {
-            Male: maleFirstNames,
-            Female: femaleFirstNames
+            Male: [...maleFirstNames],
+            Female: [...femaleFirstNames]
         }
     ],
-    lastName: lastNames,
-    position: positions,
+    lastName: [...lastNames],
+    position: [...positions],
     state: usStates.map((state) => state.name),
-    birthDate: ({ random }) =>
+    birthDate: ({ random }: { random: RandomFn }) =>
         generateDate({
             random,
             year: () => Math.floor(random() * 30) + 1960
         }),
-    phone: generatePhone
-};
+    phone: () => generatePhone()
+} satisfies ColumnValuesMap<Record<string, unknown>>;
 
 export const employeeTaskValues = {
     priority: ['High', 'Low', 'Normal'],
@@ -264,44 +308,76 @@ export const employeeTaskValues = {
         'Update Sales Strategy Documents',
         'Refund Request Template'
     ],
-    startDate: ({ random }) =>
+    startDate: ({ random }: { random: RandomFn }) =>
         generateDate({
             random,
             year: 2016
         }),
-    dueDate: ({ random, record }) =>
+    dueDate: ({ random, record }: { random: RandomFn; record: Record<string, unknown> }) =>
         generateDate({
             random,
             year: 2016,
-            month: () => Math.floor(random() * 2) + new Date(record.startDate).getMonth()
+            month: () => Math.floor(random() * 2) + new Date(String(record.startDate)).getMonth()
         })
+} satisfies ColumnValuesMap<Record<string, unknown>>;
+
+// ---------- core ----------
+function isDependentSpec<R extends Record<string, unknown>>(v: ColumnValues<R>): v is DependentSpec<R> {
+    return Array.isArray(v) && v.length === 2 && typeof v[0] === 'string' && typeof v[1] === 'object' && v[1] !== null;
+}
+
+function pickFromArray<T>(arr: readonly T[], random: RandomFn): T {
+    return arr[Math.floor(random() * arr.length)];
+}
+
+function cloneIfObject(value: unknown): unknown {
+    if (value !== null && typeof value === 'object') {
+        return { ...(value as Record<string, unknown>) };
+    }
+    return value;
+}
+
+function resolveValues<R extends Record<string, unknown>>(values: ColumnValues<R>, record: R): ColumnValues<R> {
+    let current: ColumnValues<R> = values;
+
+    while (isDependentSpec(current)) {
+        const [dependsOnKey, map] = current;
+        const dependsOnValue = String(record[dependsOnKey] ?? '');
+        current = map[dependsOnValue];
+    }
+
+    return current;
+}
+
+export type GenerateRowsOptions<R extends Record<string, unknown> = Record<string, unknown>> = {
+    columnValues?: ColumnValuesMap<R>;
+    length: number;
+    random?: RandomFn;
 };
 
-export function generateRows({ columnValues = defaultColumnValues, length, random = randomSeed(329972281) }) {
-    const data = [];
-    const columns = Object.keys(columnValues);
+export function generateRows<R extends Record<string, unknown>>({
+    columnValues = defaultColumnValues as unknown as ColumnValuesMap<R>,
+    length,
+    random = randomSeed(329972281)
+}: GenerateRowsOptions<R>): R[] {
+    const data: R[] = [];
+    const columns = Object.keys(columnValues) as (keyof ColumnValuesMap<R>)[];
 
     for (let i = 0; i < length; i += 1) {
-        const record = {};
+        const record = {} as R;
 
         columns.forEach((column) => {
-            let values = columnValues[column];
+            const raw = (columnValues as ColumnValuesMap<R>)[column as string];
+            const resolved = resolveValues(raw, record);
 
-            if (typeof values === 'function') {
-                record[column] = values({ random, index: i, record });
+            if (typeof resolved === 'function') {
+                (record as Record<string, unknown>)[column as string] = resolved({ random, index: i, record });
                 return;
             }
 
-            while (values.length === 2 && typeof values[1] === 'object') {
-                values = values[1][record[values[0]]];
-            }
-
-            const value = values[Math.floor(random() * values.length)];
-            if (typeof value === 'object') {
-                record[column] = { ...value };
-            } else {
-                record[column] = value;
-            }
+            // now resolved is an array
+            const value = pickFromArray(resolved as readonly unknown[], random);
+            (record as Record<string, unknown>)[column as string] = cloneIfObject(value);
         });
 
         data.push(record);

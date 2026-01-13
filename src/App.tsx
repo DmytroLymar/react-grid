@@ -10,6 +10,7 @@ import {
     TableFilterRow,
     TableGroupRow,
     TableHeaderRow,
+    TableSelection,
     Toolbar
 } from '@devexpress/dx-react-grid-material-ui';
 import { generateRows, globalSalesValues } from './demo-data/generator';
@@ -22,9 +23,11 @@ import {
     IntegratedFiltering,
     IntegratedGrouping,
     IntegratedPaging,
+    IntegratedSelection,
     IntegratedSorting,
     PagingState,
     SearchState,
+    SelectionState,
     SortingState,
     type Filter,
     type Grouping,
@@ -50,41 +53,49 @@ function App() {
     const [pageSizes] = useState([5, 10, 15, 0]);
     const [filters, setFilters] = useState<Filter[]>([]);
     const [searchValue, setSearchState] = useState('');
+    const [selection, setSelection] = useState<(string | number)[]>([]);
 
     return (
-        <Paper>
-            <Grid rows={rows} columns={columns}>
-                <CurrencyTypeProvider for={currencyColumns} />
-                <DateTypeProvider for={dateColumns} />
-                <DragDropProvider />
+        <div>
+            <Paper>
+                <Grid rows={rows} columns={columns}>
+                    <CurrencyTypeProvider for={currencyColumns} />
+                    <DateTypeProvider for={dateColumns} />
 
-                <SearchState value={searchValue} onValueChange={setSearchState} />
-                <SortingState sorting={sorting} onSortingChange={setSorting} />
-                <GroupingState grouping={grouping} onGroupingChange={setGrouping} />
-                <FilteringState filters={filters} onFiltersChange={setFilters} />
-                <PagingState
-                    currentPage={currentPage}
-                    onCurrentPageChange={setCurrentPage}
-                    pageSize={pageSize}
-                    onPageSizeChange={setPageSize}
-                />
+                    <DragDropProvider />
 
-                <IntegratedSorting />
-                <IntegratedGrouping />
-                <IntegratedFiltering />
-                <IntegratedPaging />
+                    <SearchState value={searchValue} onValueChange={setSearchState} />
+                    <SortingState sorting={sorting} onSortingChange={setSorting} />
+                    <GroupingState grouping={grouping} onGroupingChange={setGrouping} />
+                    <FilteringState filters={filters} onFiltersChange={setFilters} />
+                    <PagingState
+                        currentPage={currentPage}
+                        onCurrentPageChange={setCurrentPage}
+                        pageSize={pageSize}
+                        onPageSizeChange={setPageSize}
+                    />
+                    <SelectionState selection={selection} onSelectionChange={setSelection} />
 
-                <Table rowComponent={TableRow} />
-                <TableHeaderRow showSortingControls showGroupingControls />
-                <TableFilterRow />
-                <TableGroupRow />
+                    <IntegratedSorting />
+                    <IntegratedGrouping />
+                    <IntegratedFiltering />
+                    <IntegratedPaging />
+                    <IntegratedSelection />
 
-                <Toolbar />
-                <SearchPanel />
-                <GroupingPanel showGroupingControls />
-                <PagingPanel pageSizes={pageSizes} />
-            </Grid>
-        </Paper>
+                    <Table rowComponent={TableRow} />
+                    <TableHeaderRow showSortingControls showGroupingControls />
+                    <TableFilterRow />
+                    <TableSelection />
+                    <TableGroupRow />
+
+                    <Toolbar />
+                    <SearchPanel />
+                    <GroupingPanel showGroupingControls />
+                    <PagingPanel pageSizes={pageSizes} />
+                </Grid>
+            </Paper>
+            <span>Total rows selected: {selection.length}</span>
+        </div>
     );
 }
 
